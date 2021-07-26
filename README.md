@@ -25,13 +25,13 @@
 ### 预习资料
 
 1. 快应用
-   快应用开发文档： https://doc.quickapp.cn/ 
-   快应用开发工具：https://www.quickapp.cn/docCenter/IDEPublicity
-   快应用代码示例：https://github.com/quickappcn/sample
+   快应用开发文档： https://doc.quickapp.cn/   
+   快应用开发工具：https://www.quickapp.cn/docCenter/IDEPublicity  
+   快应用代码示例：https://github.com/quickappcn/sample  
 2. web 前端：
-   javascript 简单教程：https://javascript.ruanyifeng.com/
-   css 样式：https://developer.mozilla.org/zh-CN/docs/Learn/CSS
-   flex 布局：https://developer.mozilla.org/zh-CN/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox
-   （快应用、web前端知识建议每个教程看几章，大概了解知识点）
-3. Node.js 教程： http://nodejs.cn/learn/introduction-to-nodejs（至少看完简单介绍的5节）
-4. 开源历史视频：https://www.bilibili.com/video/BV1zV411d7La?p=1&share_medium=android&share_plat=android&share_source=WEIXIN
+   javascript 简单教程：https://javascript.ruanyifeng.com/  
+   css 样式：https://developer.mozilla.org/zh-CN/docs/Learn/CSS  
+   flex 布局：https://developer.mozilla.org/zh-CN/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox  
+   （快应用、web前端知识建议每个教程看几章，大概了解知识点）  
+3. Node.js 教程： http://nodejs.cn/learn/introduction-to-nodejs（至少看完简单介绍的5节）  
+4. 开源历史视频：https://www.bilibili.com/video/BV1zV411d7La?p=1&share_medium=android&share_plat=android&share_source=WEIXIN  
