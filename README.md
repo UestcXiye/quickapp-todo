@@ -24,11 +24,11 @@
 
 ### 预习资料
 
-1. 快应用
+1. 快应用  
    快应用开发文档： https://doc.quickapp.cn/   
    快应用开发工具：https://www.quickapp.cn/docCenter/IDEPublicity  
    快应用代码示例：https://github.com/quickappcn/sample  
-2. web 前端：
+2. web 前端：  
    javascript 简单教程：https://javascript.ruanyifeng.com/  
    css 样式：https://developer.mozilla.org/zh-CN/docs/Learn/CSS  
    flex 布局：https://developer.mozilla.org/zh-CN/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox  
