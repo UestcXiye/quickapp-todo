@@ -1,0 +1,123 @@
+<template>
+  <div class="item">
+    <list class="micro-list">
+      <list-item
+        class="micro-text"
+        type="item"
+        onclick="openInput(item.name,item.start,item.end,type,idx)"
+      >
+        <!-- 事件名 -->
+        <text class="event-text">{{ item.name }}</text>
+        <!-- 事件开始时间、结束时间 -->
+        <div class="time">
+          <text class="time-text">开始:{{ item.start }}</text>
+          <text class="time-text">结束:{{ item.end }}</text>
+        </div>
+      </list-item>
+      <!-- 参考：组件-拓展组件-slide view -->
+      <list-item class="slide-view" type="item">
+        <div if="{{type != 2}}" class="check-btn" onclick="markDone(idx)"></div>
+        <div
+          if="{{type == 2}}"
+          class="reduce-btn"
+          onclick="reduceItem(idx)"
+        ></div>
+      </list-item>
+    </list>
+  </div>
+</template>
+
+<style lang="less">
+@import "../../assets/style/font.css";
+
+.item {
+  flex: 1;
+  height: 120px;
+  .micro-list {
+    flex: 1;
+    height: 120px;
+    flex-direction: row;
+    .micro-text {
+      flex: 1;
+      flex-direction: column;
+      height: 120px;
+      width: 600px;
+      margin-left: 75px;
+      margin-right: 75px;
+      flex-grow: 0;
+      background-color: #ffffff;
+      border: 1px solid #f0f0f0;
+      border-radius: 0px;
+      .event-text {
+        padding-top: 12px;
+        padding-left: 50px;
+        font-weight: bold;
+        font-size: 38px;
+        color: #000000;
+      }
+      .time {
+        flex-direction: row;
+        margin-top: 10px;
+        padding-left: 30px;
+        .time-text {
+          width: 320px;
+          font-size: 23px;
+          margin-right: 30px;
+          font-family: myfont, serif;
+        }
+      }
+    }
+    .slide-view {
+      flex: 0;
+      height: 100px;
+      width: 60px;
+      background-color: #f0f0f0;
+    }
+  }
+}
+
+.check-btn {
+  width: 50px;
+  height: 50px;
+  margin-top: 35px;
+  background-image: url("/assets/images/confirm.png");
+}
+.reduce-btn {
+  width: 50px;
+  height: 50px;
+  margin-top: 35px;
+  background-image: url("/assets/images/reduce.png");
+}
+</style>
+
+<script>
+export default {
+  // type: todo == 0, doing == 1, done == 2
+  props: ['item', 'idx', 'type'],
+
+  //标记任务已完成
+  markDone(idx) {
+    this.$dispatch('doneItem', { idx: idx, type: this.type })
+  },
+
+  //删除任务
+  reduceItem(idx) {
+    this.$dispatch('reduceItem', { idx: idx })
+  },
+
+  //编辑任务
+  openInput(name, start, end, type, idx) {
+    const router = require('@system.router')
+    router.push({
+      uri: '/pages/add',
+      params: {
+        pushName: name,
+        pushStart: start,
+        pushEnd: end,
+        pushType: type,
+        pushIdx: idx
+      }
+    })
+  },
+}
+</script>

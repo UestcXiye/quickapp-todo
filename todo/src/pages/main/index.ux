@@ -1,0 +1,641 @@
+<import name="main-page-item" src="../main/eventItem.ux"></import>
+<import name="chart-bar" src="../../assets/ui/c_chart_bar.ux"></import>
+
+<template>
+  <div>
+    <stack>
+      <!-- 统计页面 -->
+      <div class="statistics-page {{belowAnim}}" onswipe="belowSwipe">
+        <!-- 主、副标题 -->
+        <div class="header">
+          <text class="main-title">Statistics</text>
+          <text class="sub-title">analysis page</text>
+        </div>
+        <stack>
+          <!-- canvas -->
+          <div class="canvas-container">
+            <!-- 图1：统计todo、doing、done事件个数的条形图 -->
+            <canvas id="canvas-bar"></canvas>
+            <text class="canvas-text">pic1: Event Bar Chart</text>
+            <!-- 图2：统计所有事件deadline的环形图 -->
+            <canvas id="canvas-ring"></canvas>
+            <text class="canvas-text">pic2: Deadline Circular Chart</text>
+          </div>
+          <div class="mask-container">
+            <div class="mask-area {{maskAnim}}"></div>
+            <div class="mask-area {{maskAnim}}"></div>
+          </div>
+        </stack>
+      </div>
+      <!-- 主页面 -->
+      <div class="main-page {{aboveAnim}}">
+        <!-- 主、副标题 -->
+        <div class="header" onswipe="aboveSwipe">
+          <text class="main-title">TODO</text>
+          <text class="sub-title">main page</text>
+        </div>
+        <!-- 参考：组件-容器组件-tabs -->
+        <tabs class="tabs" onchange="changeTabactive" index="1">
+          <tab-bar class="tab-bar">
+            <text class="tab-text">TODO</text>
+            <text class="tab-text">DOING</text>
+            <text class="tab-text">DONE</text>
+          </tab-bar>
+          <tab-content class="tab-content">
+            <!-- todolist -->
+            <div class="item-container">
+              <list class="todo-list">
+                <block for="{{todoList}}">
+                  <list-item type="item">
+                    <main-page-item
+                      item="{{$item}}"
+                      idx="{{$idx}}"
+                      type="0"
+                    ></main-page-item>
+                  </list-item>
+                </block>
+              </list>
+            </div>
+            <!-- doinglist -->
+            <div class="item-container">
+              <list class="doing-list">
+                <block for="{{doingList}}">
+                  <list-item type="item">
+                    <main-page-item
+                      item="{{$item}}"
+                      idx="{{$idx}}"
+                      type="1"
+                    ></main-page-item>
+                  </list-item>
+                </block>
+              </list>
+            </div>
+            <!-- donelist -->
+            <div class="item-container">
+              <list class="done-list">
+                <block for="{{doneList}}">
+                  <list-item type="item">
+                    <main-page-item
+                      item="{{$item}}"
+                      idx="{{$idx}}"
+                      type="2"
+                    ></main-page-item>
+                  </list-item>
+                </block>
+              </list>
+            </div>
+          </tab-content>
+        </tabs>
+        <!-- add event botton，点击后跳转到add/index.ux -->
+        <div class="below">
+          <input
+            class="add-btn"
+            type="button"
+            value="+"
+            onclick="openInput('','OK','No Deadline')"
+          />
+        </div>
+      </div>
+    </stack>
+  </div>
+</template>
+
+<script>
+import storage from '@system.storage'
+import router from '@system.router'
+
+export default {
+  private: {
+    aboveAnim: '',
+    belowAnim: '',
+    maskAnim: '',
+    todoList: [
+      { name: '晚饭', start: '2021-8-30&18:00', end: '2021-8-30&18:30' },
+      { name: '洗澡', start: '2021-7-30&22:00', end: '2021-8-30&22:20' }
+    ],
+    doingList: [
+      { name: '午休', start: '2021-7-21&12:00', end: '2021-7-21&14:00' },
+      { name: '看书', start: '2021-7-21&15:00', end: '2021-7-21&17:30' },
+      { name: '做题', start: '2021-7-21&17:30', end: '2021-7-21&19:00' }
+    ],
+    doneList: [
+      { name: '晨练', start: '2021-7-21&7:00', end: '2021-7-21&8:00' }
+    ]
+  },
+
+  onInit() {
+    //设置快应用标题
+    this.$page.setTitleBar({ text: 'todo APP' })
+    //完成事件并存储数据，调用doneItem()函数
+    this.$on('doneItem', (event) => {
+      if (event.detail.type == 0) {
+        this.doneList.push(this.todoList[event.detail.idx])
+        this.todoList.splice(event.detail.idx, 1)
+      }
+      else {
+        this.doneList.push(this.doingList[event.detail.idx])
+        this.doingList.splice(event.detail.idx, 1)
+      }
+      this.saveLists()
+    })
+    //删除事件并存储数据，调用reduceItem函数
+    this.$on('reduceItem', (event) => {
+      this.doneList.splice(event.detail.idx, 1)
+      this.saveLists()
+    })
+  },
+  //每次显示页面时，读取并更新数据，最后画图
+  onShow() {
+    let that = this
+    this.loadLists(function (data) {
+      if (data != '') {
+        let list = JSON.parse(data)
+        that.todoList = list.todoList
+        that.doingList = list.doingList
+        that.doneList = list.doneList
+        let nowDate = new Date()
+        //遍历todoList,更新数据
+        that.todoList.forEach(function (element, index) {
+          let arr = element.start.replace(/[:\-\\&]/g, ',').split(',')
+          let startDate = new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], 0, 0)
+          //如果当前时间>该任务的startTime，将该任务从todoList移动到doingList
+          if (nowDate.getTime() > startDate.getTime()) {
+            that.doingList.push(that.todoList[index])
+            that.todoList.splice(index, 1)
+          }
+        })
+        //遍历doingList,达到Deadline的任务进行震动通知
+        for (var i = 0; i < that.doingList.length; i++) {
+          if (that.doingList[i].end == 'No Deadline') continue
+          let arr = that.doingList[i].end.replace(/[:\-\\&]/g, ',').split(',')
+          let endDate = new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], 0, 0)
+          if (nowDate.getFullYear() == endDate.getFullYear() &&
+            nowDate.getMonth() == endDate.getMonth() &&
+            nowDate.getDay() == endDate.getDay()) {
+            console.log("Deadline到了!")
+            notification.show({
+              contentTitle: "事件:[" + that.doingList[i].name + "]到期了",
+              clickAction: {
+                uri: '/'
+              }
+            })
+            //触发震动，short表示短震动，多次调用震动更明显
+            vibrator.vibrate({ mode: 'short' })
+            vibrator.vibrate({ mode: 'short' })
+            vibrator.vibrate({ mode: 'short' })
+          }
+        }
+        //最后保存list，完成修改操作
+        that.saveLists()
+      }
+    })
+    //画图
+    this.drawBarChartCanvas()
+    this.drawRingCanvas()
+  },
+
+  //切换至add new event页面
+  openInput(name, start, end) {
+    this.saveLists(function () {
+      router.push({
+        uri: '/pages/add',
+        params: {
+          pushName: name,
+          pushStart: start,
+          pushEnd: end,
+          pushType: -1,
+          pushIdx: -1
+        }
+      })
+    })
+  },
+
+  //list需做备份时调用，需传入callback回调
+  saveLists(voidCallback = function () { }) {
+    let that = this
+    let list = { todoList: this.todoList, doingList: this.doingList, doneList: this.doneList }
+    storage.set({
+      key: 'msg',
+      value: list,
+      success: voidCallback(),
+      fail: function (data, code) {
+        that.$app.$def.makeToast(`handling fail, code = ${code}`)
+      }
+    })
+  },
+  //list需读取时调用，需传入callback回调
+  loadLists(dataCallback = function () { }) {
+    let that = this
+    storage.get({
+      key: 'msg',
+      success: function (data) {
+        dataCallback(data)
+      },
+      fail: function (data, code) {
+        that.$app.$def.makeToast(`handling fail, code = ${code}`)
+      }
+    })
+  },
+
+  //条形统计图
+  drawBarChartCanvas() {
+    //定义画布长度、宽度、画布内高度、条形图间隔、条形宽度
+    const Width = 750
+    const Height = 350
+    const CanvasHeight = 250
+    const step = 175
+    const barChartWidth = 40
+    //获取todo、doing、done三个数组的长度
+    let todoListLength = this.todoList.length
+    let doingListLength = this.doingList.length
+    let doneListLength = this.doneList.length
+    //求最大值、最小值
+    let min = Math.min(todoListLength, doingListLength, doneListLength)
+    let max = Math.max(todoListLength, doingListLength, doneListLength)
+    //求todo、doing、done的横坐标
+    const todoIndex = 200
+    let doingIndex = todoIndex + step
+    let doneIndex = doingIndex + step
+    //求todo、doing、done三个条形的对应高度
+    //公式：条形高度 = 个数 / （最大值 + 1） * 画布高度
+    let todo = 320 - todoListLength / (max + 1) * CanvasHeight
+    let doing = 320 - doingListLength / (max + 1) * CanvasHeight
+    let done = 320 - doneListLength / (max + 1) * CanvasHeight
+    //创建canvas-bar画布
+    const canvas = this.$element('canvas-bar')
+    const ctx = canvas.getContext('2d')
+    //绘制条形图
+    //擦除矩形区域，相当于用白色底色填充绘制
+    ctx.clearRect(0, 0, Width, Height)
+    //设置填充色
+    ctx.fillStyle = '#057748'
+    //填充绘制矩形
+    ctx.fillRect(todoIndex, todo, barChartWidth, 320 - todo)
+    ctx.fillStyle = '#4b5cc4'
+    ctx.fillRect(doingIndex, doing, barChartWidth, 320 - doing)
+    ctx.fillStyle = '#725e82'
+    ctx.fillRect(doneIndex, done, barChartWidth, 320 - done)
+
+    //绘制统计文字
+    //设置文字字体
+    ctx.font = '30px'
+    ctx.fillStyle = '#000000'
+    //填充绘制文字
+    ctx.fillText(`${todoListLength} todo`, todoIndex - 30, todo - 30)
+    ctx.fillText(`${doingListLength} doing`, doingIndex - 30, doing - 30)
+    ctx.fillText(`${doneListLength} done`, doneIndex - 30, done - 30)
+  },
+  //圆环统计图
+  drawRingCanvas() {
+    //定义时间常数
+    const MONTH = 30
+    const WEEK = 7
+    const HOUR = 24
+    const MINUTE = 60
+    const SECOND = 60
+    const MILLISECOND = 1000
+    //定义画布长度、宽度
+    const Width = 750
+    const Height = 350
+    //初始化变量
+    let overtime = 0
+    let day = 0
+    let week = 0
+    let month = 0
+    let more = 0
+    //计算时间
+    const nowDate = new Date()
+    const dayDate = new Date()
+    dayDate.setTime(dayDate.getTime() + HOUR * MINUTE * SECOND * MILLISECOND)
+    const weekDate = new Date()
+    weekDate.setTime(weekDate.getTime() + WEEK * HOUR * MINUTE * SECOND * MILLISECOND)
+    const monthDate = new Date()
+    monthDate.setTime(monthDate.getTime() + MONTH * HOUR * MINUTE * SECOND * MILLISECOND)
+    //分类统计
+    //todoList部分
+    this.todoList.forEach(function (value) {
+      //没有deadline的算“一月外”
+      if (value.end == 'No Deadine') { more += 1 }
+      else {
+        let arr = value.end.replace(/[:\-\\&]/g, ',').split(',')
+        let endDate = new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], 0, 0)
+        if (endDate.getTime() > monthDate.getTime()) more += 1
+        else if (endDate.getTime() > weekDate.getTime()) month += 1
+        else if (endDate.getTime() > dayDate.getTime()) week += 1
+        else if (endDate.getTime() > nowDate.getTime()) day += 1
+        else overtime += 1
+      }
+    })
+    //doingList部分
+    this.doingList.forEach(function (value) {
+      //没有deadline的算“一月外”
+      if (value.end == 'No Deadine') { more += 1 }
+      else {
+        let arr = value.end.replace(/[:\-\\&]/g, ',').split(',')
+        let endDate = new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], 0, 0)
+        if (endDate.getTime() > monthDate.getTime()) more += 1
+        else if (endDate.getTime() > weekDate.getTime()) month += 1
+        else if (endDate.getTime() > dayDate.getTime()) week += 1
+        else if (endDate.getTime() > nowDate.getTime()) day += 1
+        else overtime += 1
+      }
+    })
+    //计算未完成事件（非done事件）之和
+    let sum = overtime + day + week + month + more
+    //计算各部分的百分比
+    let percentList = [overtime / sum, day / sum, week / sum, month / sum, more / sum]
+    //计算各部分所占弧度的百分比
+    let circleList = [0, ...percentList]
+    for (let i = 0; i < 5; i++) circleList[i + 1] += circleList[i]
+    //创建canvas-ring画布
+    const canvas = this.$element('canvas-ring')
+    const ctx = canvas.getContext('2d')
+    //设置各部分颜色
+    const color = ['#d71345', '#a3cf62', '#ffc20e', '#5f3c23', '#585eaa']
+    //计算百分比，错位使百分号对齐
+    for (let i = 0; i < percentList.length; i++) {
+      percentList[i] = (percentList[i] * 100).toFixed(0)
+      if (percentList[i].length == 1) percentList[i] = '  ' + percentList[i]
+    }
+    let textList = [`已超时:  ${percentList[0]}%`, `一天内:  ${percentList[1]}%`, `一周内:  ${percentList[2]}%`, `一月内:  ${percentList[3]}%`, `一月外:  ${percentList[4]}%`]
+    //绘制环形图
+    //擦除矩形区域，相当于用白色底色填充绘制
+    ctx.clearRect(0, 0, Width, Height)
+    //设置圆弧线条宽度
+    ctx.lineWidth = 30
+    //设置字体大小
+    ctx.font = '25px'
+
+    for (let i = 0; i < 5; i++) {
+      //绘制左侧圆环内容
+      ctx.beginPath()
+      ctx.strokeStyle = color[i]
+      ctx.arc(220, 175, 120, Math.PI * 2 * circleList[i], Math.PI * 2 * circleList[i + 1])
+      ctx.stroke()
+      //绘制右侧统计内容
+      ctx.beginPath()
+      //设置填充色
+      ctx.fillStyle = color[i]
+      //绘制圆点
+      ctx.arc(450, 75 + 50 * i, 10, 0, 2 * Math.PI)
+      ctx.fill()
+      //绘制右侧数据
+      ctx.fillStyle = '#000000'
+      ctx.fillText(textList[i], 475, 75 + 50 * i + 6)
+    }
+    //绘制左侧圆环内文字
+    ctx.textAlign = 'center'
+    ctx.font = 'bold 55px'
+    ctx.fillText(`${sum}`, 220, 167)
+    ctx.font = '22px'
+    ctx.fillStyle = '#808080'
+    ctx.fillText('Events not done', 220, 205)
+  },
+
+  //滑动切换
+  aboveSwipe(dir) {
+    if (dir.direction == 'left') {
+      this.drawBarChartCanvas()
+      this.drawRingCanvas()
+      this.aboveAnim = 'aboveForward'
+      this.belowAnim = 'belowForward'
+      this.maskAnim = 'maskForward'
+    } else if (dir.direction == 'right' && this.aboveAnim != '') {
+      this.aboveAnim = 'aboveReverse'
+      this.belowAnim = 'belowReverse'
+      this.maskAnim = 'maskReverse'
+    }
+  },
+}
+</script>
+
+<style lang="less">
+@import "../../assets/style/font.css";
+
+.header {
+  height: 200px;
+  width: 750px;
+  background-color: #ffffff;
+  flex-direction: column;
+  .header-text {
+    flex-direction: column;
+    flex: 1;
+    font-size: 40px;
+    color: #000000;
+    padding-left: 100px;
+    font-weight: bold;
+    text-align: left;
+    font-family: myfont, serif;
+  }
+  .main-title {
+    font-size: 50px;
+    color: #000000;
+    font-weight: bold;
+    padding: 40px 0px 0px 100px;
+    font-family: myfont, serif;
+  }
+  .sub-title {
+    font-size: 35px;
+    color: #808080;
+    padding: 20px 0px 0px 150px;
+    font-family: myfont, serif;
+  }
+}
+.main-page {
+  background-color: #f0f0f0;
+  flex-direction: column;
+  .tabs {
+    flex: 1;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    .tab-content {
+      flex: 1;
+    }
+    .tab-bar {
+      height: 100px;
+      width: 600px;
+      margin-left: 75px;
+      background-color: #ffffff;
+      border: 5px solid #f0f0f0;
+      border-radius: 0px;
+    }
+    .tab-text {
+      text-align: center;
+      font-weight: bold;
+      font-family: myfont, serif;
+      color: #808080;
+    }
+    .tab-text:active {
+      color: #000000;
+      font-weight: bold;
+      font-family: myfont, serif;
+    }
+    .tab-content {
+      padding-top: 30px;
+    }
+  }
+  .below {
+    flex: 0;
+    height: 150px;
+    .add-btn {
+      height: 100px;
+      width: 100px;
+      margin-left: 325px;
+      margin-top: 10px;
+      margin-bottom: 40px;
+      background-color: #000000;
+      border-radius: 100px;
+      font-size: 50px;
+      text-align: center;
+      color: #ffffff;
+    }
+  }
+}
+.statistics-page {
+  background-color: #f0f0f0;
+  flex-direction: column;
+  .canvas-container {
+    flex: 1;
+    flex-direction: column;
+    #canvas-bar {
+      height: 350px;
+      width: 750px;
+    }
+    #canvas-ring {
+      height: 350px;
+      width: 750px;
+    }
+    .canvas-text {
+      height: 70px;
+      font-size: 30px;
+      text-align: center;
+      padding-top: 30px;
+      font-family: myfont, serif;
+    }
+  }
+  .mask-container {
+    flex-direction: column;
+    .mask-area {
+      margin-top: 70px;
+      height: 350px;
+      width: 750px;
+      background-color: #f0f0f0;
+    }
+  }
+}
+
+/* forward animation */
+
+.aboveForward {
+  animation-name: aboveForward;
+  animation-duration: 500ms;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+}
+
+@keyframes aboveForward {
+  from {
+    transform: translateX(0px) rotateY(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-375px) rotateY(-90deg);
+    opacity: 0;
+  }
+}
+
+.belowForward {
+  animation-name: belowForward;
+  animation-duration: 500ms;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+}
+
+@keyframes belowForward {
+  from {
+    transform: translateX(375px) rotateY(90deg);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0px) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+.maskForward {
+  animation-name: maskForward;
+  animation-duration: 600ms;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+  animation-delay: 600ms;
+}
+
+@keyframes maskForward {
+  from {
+    transform: translateX(0px);
+  }
+  to {
+    transform: translateX(750px);
+  }
+}
+
+/* reverse animation */
+
+.aboveReverse {
+  animation-name: aboveReverse;
+  animation-duration: 500ms;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+}
+
+@keyframes aboveReverse {
+  from {
+    transform: translateX(-375px) rotateY(-90deg);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0px) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+.belowReverse {
+  animation-name: belowReverse;
+  animation-duration: 500ms;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+}
+
+@keyframes belowReverse {
+  from {
+    transform: translateX(0px) rotateY(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(375px) rotateY(90deg);
+    opacity: 0;
+  }
+}
+
+.maskReverse {
+  animation-name: maskReverse;
+  animation-duration: 500ms;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+}
+
+@keyframes maskReverse {
+  from {
+    transform: translateX(750px);
+  }
+  to {
+    transform: translateX(0px);
+  }
+}
+</style>
